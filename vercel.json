@@ -1,5 +1,6 @@
 {
   "version": 2,
-  "name": "vehicle-vault",
-  "public": true
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" }
+  ]
 }
