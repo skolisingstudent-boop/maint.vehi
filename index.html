@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vehicle Vault - Home</title>
+    <link rel="stylesheet" href="index.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Vehicle Vault</p>
+          <h1>Quick Access</h1>
+          <p class="subtitle">Scan the QR code to open the vehicle manager</p>
+        </div>
+        <nav class="top-nav" aria-label="Primary navigation">
+          <a href="/manager.html?view=viewer" class="nav-link active">Quick Access</a>
+        </nav>
+      </header>
+
+      <main class="home-container">
+        <section class="panel qr-panel">
+          <div id="qrCodeContainer" class="qr-home-container"></div>
+          <div class="home-actions">
+            <a href="/manager.html" class="download-btn home-login-btn">Login</a>
+            <button id="downloadQrBtn" class="download-btn" type="button">Download QR Code</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="index.js"></script>
+  </body>
+</html>

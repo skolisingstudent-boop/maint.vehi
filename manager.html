@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vehicle Vault - Manager</title>
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <div id="loginOverlay" class="login-overlay" aria-live="polite">
+      <div class="login-card">
+        <p class="eyebrow">Secure access</p>
+        <h2>Manager login</h2>
+        <p class="login-subtitle">Enter the admin password to unlock editing and adding.</p>
+        <label class="login-field">
+          Password
+          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter password" />
+        </label>
+        <div class="login-actions">
+          <button id="loginSubmitBtn" type="button">Unlock</button>
+          <button id="loginCancelBtn" class="secondary" type="button">Cancel</button>
+        </div>
+        <p id="loginMessage" class="login-message"></p>
+      </div>
+    </div>
+
+    <div class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Vehicle manager</p>
+          <h1>Vehicle Vault</h1>
+          <p class="subtitle">Add or edit vehicle details in one place.</p>
+        </div>
+        <div class="hero-actions">
+          <span id="accessStatus" class="pill">Locked</span>
+          <nav class="top-nav" aria-label="Primary navigation">
+            <a id="quickAccessLink" href="/" class="nav-link">Quick Access</a>
+            <a href="/manager.html" class="nav-link active">Vehicle Manager</a>
+          </nav>
+          <button id="loginToggleBtn" class="secondary" type="button">Login</button>
+          <div class="pill"><a id="homeLink" href="/" style="color: white; text-decoration: none;">← Home</a></div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="panel form-panel">
+          <div class="panel-header">
+            <div>
+              <h2 id="formTitle">Add Vehicle</h2>
+            </div>
+            <button id="clearFormBtn" class="secondary" type="button">Clear</button>
+          </div>
+
+          <form id="vehicleForm">
+            <input id="vehicleId" type="hidden" />
+            <div class="field-grid">
+              <label>
+                Plate Number
+                <input id="plateNumber" name="plateNumber" required placeholder="ABC-123" />
+              </label>
+              <label>
+                VIN
+                <input id="vin" name="vin" placeholder="1HGCM82633A004352" />
+              </label>
+              <label>
+                Make
+                <input id="make" name="make" placeholder="Toyota" />
+              </label>
+              <label>
+                Model
+                <input id="model" name="model" placeholder="Corolla" />
+              </label>
+              <label>
+                Year
+                <input id="year" name="year" placeholder="2022" />
+              </label>
+              <label>
+                Color
+                <input id="color" name="color" placeholder="Silver" />
+              </label>
+              <label>
+                Owner Name
+                <input id="ownerName" name="ownerName" placeholder="A. Smith" />
+              </label>
+              <label>
+                Operator/Driver
+                <input id="driver" name="driver" placeholder="Romel Yanga" />
+              </label>
+              <label>
+                Contact No.
+                <input id="contactNo" name="contactNo" placeholder="0961-480-9807" />
+              </label>
+              <label>
+                Next LTO Registration
+                <input id="nextLtoRegistration" name="nextLtoRegistration" placeholder="N/A" />
+              </label>
+              <label>
+                Next GSIS Insurance
+                <input id="nextGsisInsurance" name="nextGsisInsurance" placeholder="Insurance Only" />
+              </label>
+              <label>
+                Operational Status
+                <input id="operationalStatus" name="operationalStatus" placeholder="Operational" />
+              </label>
+              <label>
+                Physical Condition
+                <input id="physicalCondition" name="physicalCondition" placeholder="Good" />
+              </label>
+              <label>
+                PM Compliance
+                <input id="pmCompliance" name="pmCompliance" placeholder="Complied" />
+              </label>
+              <label>
+                PM Type
+                <input id="pmType" name="pmType" placeholder="0" />
+              </label>
+              <label>
+                Next PM Schedule
+                <input id="nextPmSchedule" name="nextPmSchedule" placeholder="0" />
+              </label>
+            </div>
+
+            <label>
+              Notes
+              <textarea id="notes" name="notes" rows="4" placeholder="Service notes, status, or location"></textarea>
+            </label>
+
+            <div class="actions">
+              <button type="submit">Save Vehicle</button>
+              <span id="formMessage" class="message"></span>
+            </div>
+          </form>
+        </section>
+      </main>
+
+      <section class="panel list-panel">
+        <div class="panel-header">
+          <h2>Vehicle Inventory</h2>
+          <span id="countBadge" class="pill">0 vehicles</span>
+        </div>
+        <div class="search-row">
+          <input
+            id="vehicleSearch"
+            class="search-input"
+            type="search"
+            placeholder="Search plate, make, model, owner, VIN..."
+            aria-label="Search vehicles"
+          />
+        </div>
+        <div id="vehicleList" class="vehicle-list"></div>
+      </section>
+    </div>
+
+    <script src="manager.js"></script>
+  </body>
+</html>
