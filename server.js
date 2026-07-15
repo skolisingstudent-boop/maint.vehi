@@ -25,6 +25,14 @@ function getLocalBaseUrl() {
 
 const localBaseUrl = getLocalBaseUrl();
 
+function getRequestBaseUrl(req) {
+  const forwardedHost = req.headers['x-forwarded-host'];
+  const host = forwardedHost || req.headers.host || 'localhost:3000';
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const proto = forwardedProto || (req.socket && req.socket.encrypted ? 'https' : 'http');
+  return `${proto}://${host}`;
+}
+
 function ensureDataFile() {
   if (!fs.existsSync(dataFile)) {
     fs.mkdirSync(path.dirname(dataFile), { recursive: true });
@@ -120,7 +128,8 @@ const server = http.createServer(async (req, res) => {
   const role = getRequestedRole(req, url);
 
   if (url.pathname === '/api/qr-url' && req.method === 'GET') {
-    sendJson(res, 200, { url: `${localBaseUrl}/manager.html` });
+    const requestBaseUrl = getRequestBaseUrl(req);
+    sendJson(res, 200, { url: `${requestBaseUrl}/manager.html` });
     return;
   }
 
