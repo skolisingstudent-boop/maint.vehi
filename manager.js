@@ -16,6 +16,7 @@ const loginCancelBtn = document.getElementById('loginCancelBtn');
 const loginToggleBtn = document.getElementById('loginToggleBtn');
 const homeLink = document.getElementById('homeLink');
 const attachImageGlobalBtn = document.getElementById('attachImageGlobalBtn');
+const saveVehicleButton = vehicleForm?.querySelector('button[type="submit"]');
 
 const ADMIN_PASSWORD = 'Admin123!';
 
@@ -148,6 +149,9 @@ function resetForm() {
   pendingImageUpload = null;
   selectedVehicleId = null;
   formTitle.textContent = 'Add Vehicle';
+  if (saveVehicleButton) {
+    saveVehicleButton.textContent = 'Save Vehicle';
+  }
   setMessage('');
 }
 
@@ -583,7 +587,10 @@ function populateForm(vehicle) {
   document.getElementById('nextPmSchedule').value = vehicle.nextPmSchedule || '';
   document.getElementById('notes').value = vehicle.notes || '';
   formTitle.textContent = 'Edit Vehicle';
-  setMessage('Vehicle loaded for editing.');
+  if (saveVehicleButton) {
+    saveVehicleButton.textContent = 'Save Changes';
+  }
+  setMessage('Vehicle loaded for editing. Update the fields and save to apply your changes.');
 
   if (vehicleForm) {
     vehicleForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
