@@ -561,6 +561,10 @@ function populateForm(vehicle) {
   document.getElementById('notes').value = vehicle.notes || '';
   formTitle.textContent = 'Edit Vehicle';
   setMessage('Vehicle loaded for editing.');
+
+  if (vehicleForm) {
+    vehicleForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 vehicleForm.addEventListener('submit', async event => {
