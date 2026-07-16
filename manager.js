@@ -15,6 +15,7 @@ const loginSubmitBtn = document.getElementById('loginSubmitBtn');
 const loginCancelBtn = document.getElementById('loginCancelBtn');
 const loginToggleBtn = document.getElementById('loginToggleBtn');
 const homeLink = document.getElementById('homeLink');
+const attachImageGlobalBtn = document.getElementById('attachImageGlobalBtn');
 
 const ADMIN_PASSWORD = 'Admin123!';
 
@@ -128,6 +129,12 @@ function resetForm() {
   setMessage('');
 }
 
+function updateAttachImageVisibility() {
+  if (attachImageGlobalBtn) {
+    attachImageGlobalBtn.style.display = isAdminMode() ? 'inline-flex' : 'none';
+  }
+}
+
 function setRole(role, persist = true) {
   currentRole = role === 'viewer' ? 'viewer' : 'admin';
   if (persist) {
@@ -168,6 +175,8 @@ function setRole(role, persist = true) {
   } else {
     setMessage('');
   }
+
+  updateAttachImageVisibility();
 
   const filteredVehicles = getFilteredVehicles(allVehicles, activeSearchQuery);
   renderVehicles(filteredVehicles);
@@ -314,6 +323,16 @@ async function attachImageToVehicle(vehicleId) {
 
   pendingImageVehicleId = vehicleId;
   imageUploadInput.click();
+}
+
+function triggerAttachImageForSelectedVehicle() {
+  const selectedVehicleId = vehicleIdInput.value;
+  if (!selectedVehicleId) {
+    setMessage('Select or edit a vehicle first.', 'info');
+    return;
+  }
+
+  attachImageToVehicle(selectedVehicleId);
 }
 
 async function removeImageFromVehicle(vehicleId) {
@@ -577,6 +596,10 @@ vehicleForm.addEventListener('submit', async event => {
 });
 
 clearFormBtn.addEventListener('click', resetForm);
+
+if (attachImageGlobalBtn) {
+  attachImageGlobalBtn.addEventListener('click', triggerAttachImageForSelectedVehicle);
+}
 
 if (loginToggleBtn) {
   loginToggleBtn.addEventListener('click', () => {
