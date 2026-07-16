@@ -24,6 +24,7 @@ let activeSearchQuery = '';
 let currentRole = getStoredRole() || 'viewer';
 let pendingImageVehicleId = null;
 let pendingImageUpload = null;
+let selectedVehicleId = null;
 
 const imageUploadInput = document.createElement('input');
 imageUploadInput.type = 'file';
@@ -128,6 +129,7 @@ function resetForm() {
   vehicleIdInput.value = '';
   pendingImageVehicleId = null;
   pendingImageUpload = null;
+  selectedVehicleId = null;
   formTitle.textContent = 'Add Vehicle';
   setMessage('');
 }
@@ -514,7 +516,9 @@ function renderVehicles(vehicles) {
 
   vehicleList.querySelectorAll('.edit-btn').forEach(button => {
     button.addEventListener('click', () => {
-      populateForm(allVehicles.find(vehicle => vehicle.id === button.dataset.id));
+      const vehicle = allVehicles.find(item => item.id === button.dataset.id);
+      selectedVehicleId = vehicle?.id || null;
+      populateForm(vehicle);
     });
   });
 
@@ -536,6 +540,7 @@ function populateForm(vehicle) {
     return;
   }
 
+  selectedVehicleId = vehicle?.id || null;
   vehicleIdInput.value = vehicle.id || '';
   document.getElementById('plateNumber').value = vehicle.plateNumber || '';
   document.getElementById('vin').value = vehicle.vin || '';
@@ -597,7 +602,7 @@ vehicleForm.addEventListener('submit', async event => {
   }
 
   try {
-    const id = vehicleIdInput.value;
+    const id = vehicleIdInput.value || selectedVehicleId;
     const response = await fetch(id ? `/api/vehicles/${id}` : '/api/vehicles', {
       method: id ? 'PUT' : 'POST',
       headers: {
@@ -613,6 +618,7 @@ vehicleForm.addEventListener('submit', async event => {
 
     pendingImageVehicleId = null;
     pendingImageUpload = null;
+    selectedVehicleId = null;
     setMessage(id ? 'Vehicle updated.' : 'Vehicle saved.');
     resetForm();
     await loadVehicles();
