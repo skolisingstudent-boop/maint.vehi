@@ -23,6 +23,7 @@ let allVehicles = [];
 let activeSearchQuery = '';
 let currentRole = getStoredRole() || 'viewer';
 let pendingImageVehicleId = null;
+let pendingImageUpload = null;
 
 const imageUploadInput = document.createElement('input');
 imageUploadInput.type = 'file';
@@ -125,6 +126,8 @@ function resetForm() {
 
   vehicleForm.reset();
   vehicleIdInput.value = '';
+  pendingImageVehicleId = null;
+  pendingImageUpload = null;
   formTitle.textContent = 'Add Vehicle';
   setMessage('');
 }
@@ -321,18 +324,19 @@ async function attachImageToVehicle(vehicleId) {
     return;
   }
 
-  pendingImageVehicleId = vehicleId;
+  pendingImageVehicleId = vehicleId || null;
   imageUploadInput.click();
 }
 
 function triggerAttachImageForSelectedVehicle() {
   const selectedVehicleId = vehicleIdInput.value;
-  if (!selectedVehicleId) {
-    setMessage('Select or edit a vehicle first.', 'info');
+  if (selectedVehicleId) {
+    attachImageToVehicle(selectedVehicleId);
     return;
   }
 
-  attachImageToVehicle(selectedVehicleId);
+  attachImageToVehicle(null);
+  setMessage('Choose an image. It will be attached when you save the vehicle.', 'info');
 }
 
 async function removeImageFromVehicle(vehicleId) {
@@ -370,7 +374,7 @@ async function removeImageFromVehicle(vehicleId) {
 
 imageUploadInput.addEventListener('change', async () => {
   const file = imageUploadInput.files?.[0];
-  if (!file || !pendingImageVehicleId) {
+  if (!file) {
     return;
   }
 
@@ -378,35 +382,49 @@ imageUploadInput.addEventListener('change', async () => {
     const reader = new FileReader();
     reader.onload = async () => {
       try {
-        const response = await fetch(`/api/vehicles/${pendingImageVehicleId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-user-role': currentRole
-          },
-          body: JSON.stringify({
-            imageData: reader.result,
-            imageName: file.name
-          })
-        });
+        if (pendingImageVehicleId) {
+          const response = await fetch(`/api/vehicles/${pendingImageVehicleId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-user-role': currentRole
+            },
+            body: JSON.stringify({
+              imageData: reader.result,
+              imageName: file.name
+            })
+          });
 
-        if (!response.ok) {
-          throw new Error('Image upload failed');
+          if (!response.ok) {
+            throw new Error('Image upload failed');
+          }
+
+          setMessage(`Image attached for ${file.name}.`);
+          pendingImageVehicleId = null;
+          pendingImageUpload = null;
+          imageUploadInput.value = '';
+          await loadVehicles();
+          return;
         }
 
-        setMessage(`Image attached for ${file.name}.`);
-        pendingImageVehicleId = null;
+        pendingImageUpload = {
+          imageData: reader.result,
+          imageName: file.name
+        };
+        setMessage(`Image ready for ${file.name}. Save the vehicle to attach it to the inventory item.`, 'info');
         imageUploadInput.value = '';
-        await loadVehicles();
       } catch (error) {
         console.error(error);
         setMessage('Could not attach the image.', 'error');
+        pendingImageUpload = null;
+        imageUploadInput.value = '';
       }
     };
 
     reader.onerror = () => {
       setMessage('Could not read the selected image.', 'error');
       pendingImageVehicleId = null;
+      pendingImageUpload = null;
       imageUploadInput.value = '';
     };
 
@@ -414,6 +432,8 @@ imageUploadInput.addEventListener('change', async () => {
   } catch (error) {
     console.error(error);
     setMessage('Could not attach the image.', 'error');
+    pendingImageUpload = null;
+    imageUploadInput.value = '';
   }
 });
 
@@ -566,6 +586,11 @@ vehicleForm.addEventListener('submit', async event => {
     notes: document.getElementById('notes').value.trim()
   };
 
+  if (pendingImageUpload) {
+    payload.imageData = pendingImageUpload.imageData;
+    payload.imageName = pendingImageUpload.imageName;
+  }
+
   if (!payload.plateNumber) {
     setMessage('A plate number is required.', 'error');
     return;
@@ -586,6 +611,8 @@ vehicleForm.addEventListener('submit', async event => {
       throw new Error('Request failed');
     }
 
+    pendingImageVehicleId = null;
+    pendingImageUpload = null;
     setMessage(id ? 'Vehicle updated.' : 'Vehicle saved.');
     resetForm();
     await loadVehicles();
