@@ -15,12 +15,61 @@ const loginSubmitBtn = document.getElementById('loginSubmitBtn');
 const loginCancelBtn = document.getElementById('loginCancelBtn');
 const loginToggleBtn = document.getElementById('loginToggleBtn');
 const homeLink = document.getElementById('homeLink');
+const attachImageGlobalBtn = document.getElementById('attachImageGlobalBtn');
 
 const ADMIN_PASSWORD = 'Admin123!';
 
 let allVehicles = [];
 let activeSearchQuery = '';
 let currentRole = getStoredRole() || 'viewer';
+let pendingImageVehicleId = null;
+
+const imageUploadInput = document.createElement('input');
+imageUploadInput.type = 'file';
+imageUploadInput.accept = 'image/*';
+imageUploadInput.hidden = true;
+document.body.appendChild(imageUploadInput);
+
+const imagePreviewModal = document.createElement('div');
+imagePreviewModal.className = 'image-preview-modal hidden';
+document.body.appendChild(imagePreviewModal);
+
+const imagePreviewContent = document.createElement('div');
+imagePreviewContent.className = 'image-preview-content';
+imagePreviewModal.appendChild(imagePreviewContent);
+
+const imagePreviewImage = document.createElement('img');
+imagePreviewImage.alt = 'Vehicle preview';
+imagePreviewImage.className = 'image-preview-image';
+imagePreviewContent.appendChild(imagePreviewImage);
+
+const imagePreviewClose = document.createElement('button');
+imagePreviewClose.type = 'button';
+imagePreviewClose.className = 'image-preview-close';
+imagePreviewClose.textContent = 'Close';
+imagePreviewContent.appendChild(imagePreviewClose);
+
+function openImagePreview(imageData, imageName) {
+  if (!imageData) {
+    return;
+  }
+  imagePreviewImage.src = imageData;
+  imagePreviewImage.alt = imageName || 'Vehicle preview';
+  imagePreviewModal.classList.remove('hidden');
+}
+
+function closeImagePreview() {
+  imagePreviewModal.classList.add('hidden');
+  imagePreviewImage.removeAttribute('src');
+}
+
+imagePreviewModal.addEventListener('click', event => {
+  if (event.target === imagePreviewModal) {
+    closeImagePreview();
+  }
+});
+
+imagePreviewClose.addEventListener('click', closeImagePreview);
 
 function getStoredRole() {
   const viewQuery = new URLSearchParams(window.location.search).get('view');
@@ -80,6 +129,12 @@ function resetForm() {
   setMessage('');
 }
 
+function updateAttachImageVisibility() {
+  if (attachImageGlobalBtn) {
+    attachImageGlobalBtn.style.display = isAdminMode() ? 'inline-flex' : 'none';
+  }
+}
+
 function setRole(role, persist = true) {
   currentRole = role === 'viewer' ? 'viewer' : 'admin';
   if (persist) {
@@ -120,6 +175,8 @@ function setRole(role, persist = true) {
   } else {
     setMessage('');
   }
+
+  updateAttachImageVisibility();
 
   const filteredVehicles = getFilteredVehicles(allVehicles, activeSearchQuery);
   renderVehicles(filteredVehicles);
@@ -258,6 +315,108 @@ async function deleteVehicle(id) {
   }
 }
 
+async function attachImageToVehicle(vehicleId) {
+  if (!isAdminMode()) {
+    setMessage('Log in to unlock editing and adding.', 'info');
+    return;
+  }
+
+  pendingImageVehicleId = vehicleId;
+  imageUploadInput.click();
+}
+
+function triggerAttachImageForSelectedVehicle() {
+  const selectedVehicleId = vehicleIdInput.value;
+  if (!selectedVehicleId) {
+    setMessage('Select or edit a vehicle first.', 'info');
+    return;
+  }
+
+  attachImageToVehicle(selectedVehicleId);
+}
+
+async function removeImageFromVehicle(vehicleId) {
+  if (!isAdminMode()) {
+    setMessage('Log in to unlock editing and adding.', 'info');
+    return;
+  }
+
+  const vehicle = allVehicles.find(item => item.id === vehicleId);
+  if (!vehicle || !window.confirm(`Remove the image for ${vehicle.plateNumber || 'this vehicle'}?`)) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/vehicles/${vehicleId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-role': currentRole
+      },
+      body: JSON.stringify({ imageData: '', imageName: '' })
+    });
+
+    if (!response.ok) {
+      throw new Error('Remove image failed');
+    }
+
+    setMessage('Image removed.');
+    await loadVehicles();
+  } catch (error) {
+    console.error(error);
+    setMessage('Could not remove the image.', 'error');
+  }
+}
+
+imageUploadInput.addEventListener('change', async () => {
+  const file = imageUploadInput.files?.[0];
+  if (!file || !pendingImageVehicleId) {
+    return;
+  }
+
+  try {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const response = await fetch(`/api/vehicles/${pendingImageVehicleId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-role': currentRole
+          },
+          body: JSON.stringify({
+            imageData: reader.result,
+            imageName: file.name
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Image upload failed');
+        }
+
+        setMessage(`Image attached for ${file.name}.`);
+        pendingImageVehicleId = null;
+        imageUploadInput.value = '';
+        await loadVehicles();
+      } catch (error) {
+        console.error(error);
+        setMessage('Could not attach the image.', 'error');
+      }
+    };
+
+    reader.onerror = () => {
+      setMessage('Could not read the selected image.', 'error');
+      pendingImageVehicleId = null;
+      imageUploadInput.value = '';
+    };
+
+    reader.readAsDataURL(file);
+  } catch (error) {
+    console.error(error);
+    setMessage('Could not attach the image.', 'error');
+  }
+});
+
 function renderVehicles(vehicles) {
   if (!allVehicles.length) {
     vehicleList.innerHTML = '<div class="vehicle-card">No vehicles added yet.</div>';
@@ -274,11 +433,21 @@ function renderVehicles(vehicles) {
       const actionButtons = isAdminMode()
         ? `
           <div class="action-buttons">
+            <button class="attach-image-btn secondary" type="button" data-id="${vehicle.id}">Attach Image</button>
             <button class="edit-btn" type="button" data-id="${vehicle.id}">Edit</button>
             <button class="delete-btn" type="button" data-id="${vehicle.id}">Delete</button>
           </div>
         `
         : '<span class="read-only-pill">View only</span>';
+
+      const photoPreview = vehicle.imageData
+        ? `<button class="vehicle-photo" type="button" data-image="${vehicle.imageData}" data-name="${vehicle.imageName || 'Vehicle image'}"><img src="${vehicle.imageData}" alt="${vehicle.imageName || 'Vehicle image'}" /></button>`
+        : '';
+
+      const imageLabel = vehicle.imageName ? `<div class="meta">Photo: ${vehicle.imageName}</div>` : '';
+      const removeImageButton = vehicle.imageData && isAdminMode()
+        ? `<button class="remove-image-btn secondary" type="button" data-id="${vehicle.id}">Remove image</button>`
+        : '';
 
       return `
         <article class="vehicle-card">
@@ -289,10 +458,13 @@ function renderVehicles(vehicles) {
           <div class="meta">${vehicle.model || 'Model not set'} • ${vehicle.year || 'Year unknown'}</div>
           <div class="meta">Owner: ${vehicle.ownerName || 'Unassigned'}</div>
           <div class="meta">VIN: ${vehicle.vin || 'Not provided'}</div>
+          ${photoPreview}
+          ${imageLabel}
           <div class="actions-row">
             <span>${vehicle.notes || 'No notes'}</span>
             ${actionButtons}
           </div>
+          ${removeImageButton}
         </article>
       `;
     })
@@ -301,6 +473,24 @@ function renderVehicles(vehicles) {
   if (!isAdminMode()) {
     return;
   }
+
+  vehicleList.querySelectorAll('.attach-image-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      attachImageToVehicle(button.dataset.id);
+    });
+  });
+
+  vehicleList.querySelectorAll('.remove-image-btn').forEach(button => {
+    button.addEventListener('click', async () => {
+      await removeImageFromVehicle(button.dataset.id);
+    });
+  });
+
+  vehicleList.querySelectorAll('.vehicle-photo').forEach(button => {
+    button.addEventListener('click', () => {
+      openImagePreview(button.dataset.image, button.dataset.name);
+    });
+  });
 
   vehicleList.querySelectorAll('.edit-btn').forEach(button => {
     button.addEventListener('click', () => {
@@ -406,6 +596,10 @@ vehicleForm.addEventListener('submit', async event => {
 });
 
 clearFormBtn.addEventListener('click', resetForm);
+
+if (attachImageGlobalBtn) {
+  attachImageGlobalBtn.addEventListener('click', triggerAttachImageForSelectedVehicle);
+}
 
 if (loginToggleBtn) {
   loginToggleBtn.addEventListener('click', () => {
