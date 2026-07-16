@@ -472,6 +472,29 @@ button.secondary {
   background: #dc2626;
 }
 
+.vehicle-card .attach-image-btn {
+  background: rgba(255, 255, 255, 0.14);
+  color: #eff4ff;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.vehicle-card .vehicle-photo {
+  margin-top: 10px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  max-width: 220px;
+}
+
+.vehicle-card .vehicle-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 180px;
+  object-fit: cover;
+}
+
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;

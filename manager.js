@@ -21,6 +21,13 @@ const ADMIN_PASSWORD = 'Admin123!';
 let allVehicles = [];
 let activeSearchQuery = '';
 let currentRole = getStoredRole() || 'viewer';
+let pendingImageVehicleId = null;
+
+const imageUploadInput = document.createElement('input');
+imageUploadInput.type = 'file';
+imageUploadInput.accept = 'image/*';
+imageUploadInput.hidden = true;
+document.body.appendChild(imageUploadInput);
 
 function getStoredRole() {
   const viewQuery = new URLSearchParams(window.location.search).get('view');
@@ -258,6 +265,65 @@ async function deleteVehicle(id) {
   }
 }
 
+async function attachImageToVehicle(vehicleId) {
+  if (!isAdminMode()) {
+    setMessage('Log in to unlock editing and adding.', 'info');
+    return;
+  }
+
+  pendingImageVehicleId = vehicleId;
+  imageUploadInput.click();
+}
+
+imageUploadInput.addEventListener('change', async () => {
+  const file = imageUploadInput.files?.[0];
+  if (!file || !pendingImageVehicleId) {
+    return;
+  }
+
+  try {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const response = await fetch(`/api/vehicles/${pendingImageVehicleId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-role': currentRole
+          },
+          body: JSON.stringify({
+            imageData: reader.result,
+            imageName: file.name
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Image upload failed');
+        }
+
+        setMessage(`Image attached for ${file.name}.`);
+        pendingImageVehicleId = null;
+        imageUploadInput.value = '';
+        await loadVehicles();
+      } catch (error) {
+        console.error(error);
+        setMessage('Could not attach the image.', 'error');
+      }
+    };
+
+    reader.onerror = () => {
+      setMessage('Could not read the selected image.', 'error');
+      pendingImageVehicleId = null;
+      imageUploadInput.value = '';
+    };
+
+    reader.readAsDataURL(file);
+  } catch (error) {
+    console.error(error);
+    setMessage('Could not attach the image.', 'error');
+  }
+});
+
 function renderVehicles(vehicles) {
   if (!allVehicles.length) {
     vehicleList.innerHTML = '<div class="vehicle-card">No vehicles added yet.</div>';
@@ -274,11 +340,18 @@ function renderVehicles(vehicles) {
       const actionButtons = isAdminMode()
         ? `
           <div class="action-buttons">
+            <button class="attach-image-btn secondary" type="button" data-id="${vehicle.id}">Attach Image</button>
             <button class="edit-btn" type="button" data-id="${vehicle.id}">Edit</button>
             <button class="delete-btn" type="button" data-id="${vehicle.id}">Delete</button>
           </div>
         `
         : '<span class="read-only-pill">View only</span>';
+
+      const photoPreview = vehicle.imageData
+        ? `<div class="vehicle-photo"><img src="${vehicle.imageData}" alt="${vehicle.imageName || 'Vehicle image'}" /></div>`
+        : '';
+
+      const imageLabel = vehicle.imageName ? `<div class="meta">Photo: ${vehicle.imageName}</div>` : '';
 
       return `
         <article class="vehicle-card">
@@ -289,6 +362,8 @@ function renderVehicles(vehicles) {
           <div class="meta">${vehicle.model || 'Model not set'} • ${vehicle.year || 'Year unknown'}</div>
           <div class="meta">Owner: ${vehicle.ownerName || 'Unassigned'}</div>
           <div class="meta">VIN: ${vehicle.vin || 'Not provided'}</div>
+          ${photoPreview}
+          ${imageLabel}
           <div class="actions-row">
             <span>${vehicle.notes || 'No notes'}</span>
             ${actionButtons}
@@ -301,6 +376,12 @@ function renderVehicles(vehicles) {
   if (!isAdminMode()) {
     return;
   }
+
+  vehicleList.querySelectorAll('.attach-image-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      attachImageToVehicle(button.dataset.id);
+    });
+  });
 
   vehicleList.querySelectorAll('.edit-btn').forEach(button => {
     button.addEventListener('click', () => {

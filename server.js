@@ -166,6 +166,8 @@ const server = http.createServer(async (req, res) => {
         nextPmSchedule: payload.nextPmSchedule || '',
         vin: payload.vin || '',
         notes: payload.notes || '',
+        imageData: payload.imageData || '',
+        imageName: payload.imageName || '',
         scannedAt: payload.scannedAt || new Date().toISOString()
       };
       vehicles.push(newVehicle);
