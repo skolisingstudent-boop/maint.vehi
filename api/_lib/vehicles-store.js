@@ -40,9 +40,7 @@ function writeVehicles(vehicles) {
 
 function parseBody(req) {
   return new Promise((resolve, reject) => {
-    const bodyFromRequest = req.body;
-    const rawBodyFromRequest = req.rawBody;
-    const bodyCandidates = [bodyFromRequest, rawBodyFromRequest];
+    const bodyCandidates = [req?.body, req?.rawBody, req?.request?.body, req?.request?.rawBody];
 
     for (const candidate of bodyCandidates) {
       if (candidate === undefined || candidate === null) {
@@ -51,7 +49,8 @@ function parseBody(req) {
 
       try {
         if (typeof candidate === 'string') {
-          resolve(candidate ? JSON.parse(candidate) : {});
+          const trimmed = candidate.trim();
+          resolve(trimmed ? JSON.parse(trimmed) : {});
           return;
         }
 
@@ -61,33 +60,47 @@ function parseBody(req) {
           return;
         }
 
+        if (candidate instanceof Uint8Array) {
+          const text = Buffer.from(candidate).toString('utf8');
+          resolve(text ? JSON.parse(text) : {});
+          return;
+        }
+
         if (typeof candidate === 'object') {
           resolve(candidate);
           return;
         }
       } catch (error) {
-        reject(error);
-        return;
+        try {
+          const text = String(candidate);
+          if (text.trim()) {
+            resolve(JSON.parse(text));
+            return;
+          }
+        } catch (fallbackError) {
+          reject(fallbackError);
+          return;
+        }
       }
     }
 
-    if (typeof req.on !== 'function') {
-      resolve({});
+    if (typeof req?.on === 'function') {
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk.toString();
+      });
+      req.on('end', () => {
+        try {
+          resolve(body ? JSON.parse(body) : {});
+        } catch (error) {
+          reject(error);
+        }
+      });
+      req.on('error', reject);
       return;
     }
 
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-    req.on('end', () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch (error) {
-        reject(error);
-      }
-    });
-    req.on('error', reject);
+    resolve({});
   });
 }
 
