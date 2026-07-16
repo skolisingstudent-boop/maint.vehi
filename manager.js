@@ -479,7 +479,6 @@ function renderVehicles(vehicles) {
         ? `
           <div class="action-buttons">
             <button class="attach-image-btn secondary" type="button" data-id="${vehicle.id}">Attach Image</button>
-            <button class="set-background-btn secondary" type="button" data-id="${vehicle.id}">Set background</button>
             <button class="edit-btn" type="button" data-id="${vehicle.id}">Edit</button>
             <button class="delete-btn" type="button" data-id="${vehicle.id}">Delete</button>
           </div>
@@ -535,19 +534,6 @@ function renderVehicles(vehicles) {
   vehicleList.querySelectorAll('.vehicle-photo').forEach(button => {
     button.addEventListener('click', () => {
       openImagePreview(button.dataset.image, button.dataset.name);
-    });
-  });
-
-  vehicleList.querySelectorAll('.set-background-btn').forEach(button => {
-    button.addEventListener('click', () => {
-      const vehicle = allVehicles.find(item => item.id === button.dataset.id);
-      if (!vehicle?.imageData) {
-        setMessage('This vehicle has no photo yet.', 'error');
-        return;
-      }
-
-      setPageBackgroundImage(vehicle.imageData);
-      setMessage(`Using ${vehicle.plateNumber || 'this vehicle'} photo as the page background.`, 'info');
     });
   });
 
