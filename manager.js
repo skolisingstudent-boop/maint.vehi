@@ -29,6 +29,47 @@ imageUploadInput.accept = 'image/*';
 imageUploadInput.hidden = true;
 document.body.appendChild(imageUploadInput);
 
+const imagePreviewModal = document.createElement('div');
+imagePreviewModal.className = 'image-preview-modal hidden';
+document.body.appendChild(imagePreviewModal);
+
+const imagePreviewContent = document.createElement('div');
+imagePreviewContent.className = 'image-preview-content';
+imagePreviewModal.appendChild(imagePreviewContent);
+
+const imagePreviewImage = document.createElement('img');
+imagePreviewImage.alt = 'Vehicle preview';
+imagePreviewImage.className = 'image-preview-image';
+imagePreviewContent.appendChild(imagePreviewImage);
+
+const imagePreviewClose = document.createElement('button');
+imagePreviewClose.type = 'button';
+imagePreviewClose.className = 'image-preview-close';
+imagePreviewClose.textContent = 'Close';
+imagePreviewContent.appendChild(imagePreviewClose);
+
+function openImagePreview(imageData, imageName) {
+  if (!imageData) {
+    return;
+  }
+  imagePreviewImage.src = imageData;
+  imagePreviewImage.alt = imageName || 'Vehicle preview';
+  imagePreviewModal.classList.remove('hidden');
+}
+
+function closeImagePreview() {
+  imagePreviewModal.classList.add('hidden');
+  imagePreviewImage.removeAttribute('src');
+}
+
+imagePreviewModal.addEventListener('click', event => {
+  if (event.target === imagePreviewModal) {
+    closeImagePreview();
+  }
+});
+
+imagePreviewClose.addEventListener('click', closeImagePreview);
+
 function getStoredRole() {
   const viewQuery = new URLSearchParams(window.location.search).get('view');
   if (viewQuery === 'viewer') {
@@ -275,6 +316,39 @@ async function attachImageToVehicle(vehicleId) {
   imageUploadInput.click();
 }
 
+async function removeImageFromVehicle(vehicleId) {
+  if (!isAdminMode()) {
+    setMessage('Log in to unlock editing and adding.', 'info');
+    return;
+  }
+
+  const vehicle = allVehicles.find(item => item.id === vehicleId);
+  if (!vehicle || !window.confirm(`Remove the image for ${vehicle.plateNumber || 'this vehicle'}?`)) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/vehicles/${vehicleId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-role': currentRole
+      },
+      body: JSON.stringify({ imageData: '', imageName: '' })
+    });
+
+    if (!response.ok) {
+      throw new Error('Remove image failed');
+    }
+
+    setMessage('Image removed.');
+    await loadVehicles();
+  } catch (error) {
+    console.error(error);
+    setMessage('Could not remove the image.', 'error');
+  }
+}
+
 imageUploadInput.addEventListener('change', async () => {
   const file = imageUploadInput.files?.[0];
   if (!file || !pendingImageVehicleId) {
@@ -348,10 +422,13 @@ function renderVehicles(vehicles) {
         : '<span class="read-only-pill">View only</span>';
 
       const photoPreview = vehicle.imageData
-        ? `<div class="vehicle-photo"><img src="${vehicle.imageData}" alt="${vehicle.imageName || 'Vehicle image'}" /></div>`
+        ? `<button class="vehicle-photo" type="button" data-image="${vehicle.imageData}" data-name="${vehicle.imageName || 'Vehicle image'}"><img src="${vehicle.imageData}" alt="${vehicle.imageName || 'Vehicle image'}" /></button>`
         : '';
 
       const imageLabel = vehicle.imageName ? `<div class="meta">Photo: ${vehicle.imageName}</div>` : '';
+      const removeImageButton = vehicle.imageData && isAdminMode()
+        ? `<button class="remove-image-btn secondary" type="button" data-id="${vehicle.id}">Remove image</button>`
+        : '';
 
       return `
         <article class="vehicle-card">
@@ -368,6 +445,7 @@ function renderVehicles(vehicles) {
             <span>${vehicle.notes || 'No notes'}</span>
             ${actionButtons}
           </div>
+          ${removeImageButton}
         </article>
       `;
     })
@@ -380,6 +458,18 @@ function renderVehicles(vehicles) {
   vehicleList.querySelectorAll('.attach-image-btn').forEach(button => {
     button.addEventListener('click', () => {
       attachImageToVehicle(button.dataset.id);
+    });
+  });
+
+  vehicleList.querySelectorAll('.remove-image-btn').forEach(button => {
+    button.addEventListener('click', async () => {
+      await removeImageFromVehicle(button.dataset.id);
+    });
+  });
+
+  vehicleList.querySelectorAll('.vehicle-photo').forEach(button => {
+    button.addEventListener('click', () => {
+      openImagePreview(button.dataset.image, button.dataset.name);
     });
   });
 
