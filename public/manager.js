@@ -51,12 +51,29 @@ imagePreviewClose.className = 'image-preview-close';
 imagePreviewClose.textContent = 'Close';
 imagePreviewContent.appendChild(imagePreviewClose);
 
+function setPageBackgroundImage(imageData) {
+  if (!imageData) {
+    document.body.classList.remove('has-background-image');
+    document.body.style.removeProperty('--app-background-image');
+    return;
+  }
+
+  document.body.style.setProperty('--app-background-image', `url("${imageData}")`);
+  document.body.classList.add('has-background-image');
+}
+
+function clearPageBackgroundImage() {
+  document.body.classList.remove('has-background-image');
+  document.body.style.removeProperty('--app-background-image');
+}
+
 function openImagePreview(imageData, imageName) {
   if (!imageData) {
     return;
   }
   imagePreviewImage.src = imageData;
   imagePreviewImage.alt = imageName || 'Vehicle preview';
+  setPageBackgroundImage(imageData);
   imagePreviewModal.classList.remove('hidden');
 }
 
@@ -306,7 +323,12 @@ async function deleteVehicle(id) {
   }
 
   try {
-    const response = await fetch(`/api/vehicles/${id}`, { method: 'DELETE' });
+    const response = await fetch(`/api/vehicles/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'x-user-role': currentRole
+      }
+    });
     if (!response.ok) {
       throw new Error('Delete failed');
     }
@@ -366,6 +388,7 @@ async function removeImageFromVehicle(vehicleId) {
       throw new Error('Remove image failed');
     }
 
+    clearPageBackgroundImage();
     setMessage('Image removed.');
     await loadVehicles();
   } catch (error) {
@@ -456,6 +479,7 @@ function renderVehicles(vehicles) {
         ? `
           <div class="action-buttons">
             <button class="attach-image-btn secondary" type="button" data-id="${vehicle.id}">Attach Image</button>
+            <button class="set-background-btn secondary" type="button" data-id="${vehicle.id}">Set background</button>
             <button class="edit-btn" type="button" data-id="${vehicle.id}">Edit</button>
             <button class="delete-btn" type="button" data-id="${vehicle.id}">Delete</button>
           </div>
@@ -511,6 +535,19 @@ function renderVehicles(vehicles) {
   vehicleList.querySelectorAll('.vehicle-photo').forEach(button => {
     button.addEventListener('click', () => {
       openImagePreview(button.dataset.image, button.dataset.name);
+    });
+  });
+
+  vehicleList.querySelectorAll('.set-background-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      const vehicle = allVehicles.find(item => item.id === button.dataset.id);
+      if (!vehicle?.imageData) {
+        setMessage('This vehicle has no photo yet.', 'error');
+        return;
+      }
+
+      setPageBackgroundImage(vehicle.imageData);
+      setMessage(`Using ${vehicle.plateNumber || 'this vehicle'} photo as the page background.`, 'info');
     });
   });
 
