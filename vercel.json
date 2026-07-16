@@ -1,9 +1,11 @@
 {
   "version": 2,
   "cleanUrls": true,
-  "rewrites": [
-    { "source": "/manager", "destination": "/api/manager" },
-    { "source": "/manager/", "destination": "/api/manager" },
-    { "source": "/", "destination": "/api/index" }
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/manager", "dest": "/manager.html" },
+    { "src": "/manager/", "dest": "/manager.html" },
+    { "src": "/manager.html", "dest": "/manager.html" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
