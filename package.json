@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "Vehicle inventory app with QR scanning and editable records",
   "main": "server.js",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js"
   }
 }

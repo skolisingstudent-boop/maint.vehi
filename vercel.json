@@ -1,6 +1,9 @@
 {
   "version": 2,
+  "cleanUrls": true,
   "rewrites": [
+    { "source": "/manager", "destination": "/manager.html" },
+    { "source": "/manager/", "destination": "/manager.html" },
     { "source": "/", "destination": "/index.html" }
   ]
 }
