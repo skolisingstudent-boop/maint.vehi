@@ -108,6 +108,25 @@ function serveStatic(res, requestPath) {
 
 function parseBody(req) {
   return new Promise((resolve, reject) => {
+    if (req.body !== undefined && req.body !== null) {
+      try {
+        if (typeof req.body === 'string') {
+          resolve(req.body ? JSON.parse(req.body) : {});
+          return;
+        }
+        if (Buffer.isBuffer(req.body)) {
+          const text = req.body.toString('utf8');
+          resolve(text ? JSON.parse(text) : {});
+          return;
+        }
+        resolve(req.body);
+        return;
+      } catch (error) {
+        reject(error);
+        return;
+      }
+    }
+
     let body = '';
     req.on('data', chunk => {
       body += chunk.toString();

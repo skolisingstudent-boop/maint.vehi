@@ -616,8 +616,17 @@ vehicleForm.addEventListener('submit', async event => {
       body: JSON.stringify(payload)
     });
 
+    const responseBody = await response.text();
+    let parsedBody = null;
+    try {
+      parsedBody = responseBody ? JSON.parse(responseBody) : null;
+    } catch (error) {
+      parsedBody = null;
+    }
+
     if (!response.ok) {
-      throw new Error('Request failed');
+      const errorMessage = parsedBody?.error || `Request failed with status ${response.status}`;
+      throw new Error(errorMessage);
     }
 
     pendingImageVehicleId = null;
@@ -628,7 +637,7 @@ vehicleForm.addEventListener('submit', async event => {
     await loadVehicles();
   } catch (error) {
     console.error(error);
-    setMessage('Could not save the vehicle.', 'error');
+    setMessage(error.message || 'Could not save the vehicle.', 'error');
   }
 });
 

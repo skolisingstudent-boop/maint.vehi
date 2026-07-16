@@ -41,15 +41,28 @@ function writeVehicles(vehicles) {
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     const bodyFromRequest = req.body;
-    if (bodyFromRequest !== undefined) {
+    const rawBodyFromRequest = req.rawBody;
+    const bodyCandidates = [bodyFromRequest, rawBodyFromRequest];
+
+    for (const candidate of bodyCandidates) {
+      if (candidate === undefined || candidate === null) {
+        continue;
+      }
+
       try {
-        if (typeof bodyFromRequest === 'string') {
-          resolve(bodyFromRequest ? JSON.parse(bodyFromRequest) : {});
+        if (typeof candidate === 'string') {
+          resolve(candidate ? JSON.parse(candidate) : {});
           return;
         }
 
-        if (bodyFromRequest && typeof bodyFromRequest === 'object') {
-          resolve(bodyFromRequest);
+        if (Buffer.isBuffer(candidate)) {
+          const text = candidate.toString('utf8');
+          resolve(text ? JSON.parse(text) : {});
+          return;
+        }
+
+        if (typeof candidate === 'object') {
+          resolve(candidate);
           return;
         }
       } catch (error) {
