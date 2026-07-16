@@ -630,15 +630,17 @@ vehicleForm.addEventListener('submit', async event => {
     payload.imageName = pendingImageUpload.imageName;
   }
 
-  if (!payload.plateNumber) {
-    setMessage('A plate number is required.', 'error');
+  const id = (vehicleIdInput?.value || selectedVehicleId || '').trim();
+  const isEditing = Boolean(id);
+
+  if (!isEditing && !payload.plateNumber) {
+    setMessage('A plate number is required for new vehicles.', 'error');
     return;
   }
 
   try {
-    const id = vehicleIdInput.value || selectedVehicleId;
-    const response = await fetch(id ? `/api/vehicles/${id}` : '/api/vehicles', {
-      method: id ? 'PUT' : 'POST',
+    const response = await fetch(isEditing ? `/api/vehicles/${id}` : '/api/vehicles', {
+      method: isEditing ? 'PUT' : 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-user-role': currentRole
@@ -662,7 +664,7 @@ vehicleForm.addEventListener('submit', async event => {
     pendingImageVehicleId = null;
     pendingImageUpload = null;
     selectedVehicleId = null;
-    setMessage(id ? 'Vehicle updated.' : 'Vehicle saved.');
+    setMessage(isEditing ? 'Vehicle updated.' : 'Vehicle saved.');
     resetForm();
     await loadVehicles();
   } catch (error) {
