@@ -40,6 +40,29 @@ function writeVehicles(vehicles) {
 
 function parseBody(req) {
   return new Promise((resolve, reject) => {
+    const bodyFromRequest = req.body;
+    if (bodyFromRequest !== undefined) {
+      try {
+        if (typeof bodyFromRequest === 'string') {
+          resolve(bodyFromRequest ? JSON.parse(bodyFromRequest) : {});
+          return;
+        }
+
+        if (bodyFromRequest && typeof bodyFromRequest === 'object') {
+          resolve(bodyFromRequest);
+          return;
+        }
+      } catch (error) {
+        reject(error);
+        return;
+      }
+    }
+
+    if (typeof req.on !== 'function') {
+      resolve({});
+      return;
+    }
+
     let body = '';
     req.on('data', chunk => {
       body += chunk.toString();
